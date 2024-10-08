@@ -94,7 +94,7 @@ namespace OtpLoginSystem.Controllers
             otpRecord.Attempts++;
             if (otpRecord.Attempts >= 3)
             {
-                otpRecord.BlockedUntil = DateTime.Now.AddMinutes(15);  // Set the block duration
+                otpRecord.BlockedUntil = DateTime.Now.AddMinutes(495);  // Set the block duration
             }
             await _otpRepository.CreateOrUpdateOtpAsync(otpRecord);  // Update the record in the database
 
