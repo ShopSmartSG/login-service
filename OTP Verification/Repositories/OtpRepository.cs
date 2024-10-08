@@ -10,9 +10,9 @@ namespace OtpLoginSystem.Repositories
 
         public OtpRepository(string connectionString, string databaseName)
         {
-            //var client = new MongoClient(connectionString);
-           // var database = client.GetDatabase(databaseName);
-           // _otpCollection = database.GetCollection<OtpRecord>("OtpRecords"); // Collection name
+            var client = new MongoClient(connectionString);
+            var database = client.GetDatabase(databaseName);
+            _otpCollection = database.GetCollection<OtpRecord>("Shopsmart"); // Collection name
         }
 
         public async Task<OtpRecord> GetOtpByEmailAsync(string email)

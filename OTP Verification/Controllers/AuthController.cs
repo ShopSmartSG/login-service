@@ -39,7 +39,7 @@ namespace OtpLoginSystem.Controllers
 
             // Generate a new OTP
             var otp = GenerateOtp();  // Your method to generate an OTP
-            var expiryTime = DateTime.Now.AddMinutes(5); // Set expiry time
+            var expiryTime = DateTime.Now.AddMinutes(485); // Set expiry time
 
             // Create a new OtpRecord
             otpRecord = new OtpRecord
@@ -86,7 +86,7 @@ namespace OtpLoginSystem.Controllers
             // Validate OTP
             if (otpRecord.Otp == request.Otp)
             {
-                await _otpRepository.RemoveOtpAsync(request.Email);  // Clear OTP after successful validation
+                //await _otpRepository.RemoveOtpAsync(request.Email);  // Clear OTP after successful validation
                 return Ok("OTP validated successfully.");
             }
 
