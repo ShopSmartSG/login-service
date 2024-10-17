@@ -1,7 +1,12 @@
 name: DAST Scan
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - feature/shopsmart-72
+  pull_request:
+    branches:
+      - feature/shopsmart-72
 
 jobs:
   zap:

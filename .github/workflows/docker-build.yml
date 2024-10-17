@@ -3,7 +3,7 @@ name: Docker Build and Push with SonarCloud
 on:
   push:
     branches:
-      - fe
+      - feature/shopsmart-72
   pull_request:
     branches:
       - feature/shopsmart-72
