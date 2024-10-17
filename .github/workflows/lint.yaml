@@ -3,10 +3,10 @@ name: Lint
 on:
   push:
     branches:
-      - main
+      - feature/shopsmart-72
   pull_request:
     branches:
-      - main
+      - feature/shopsmart-72
 
 jobs:
   lint:
