@@ -8,7 +8,7 @@ using OtpLoginSystem.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 var mongoDbSettings = builder.Configuration.GetSection("MongoDb");
-var connectionString = "mongodb://localhost:27017/";
+var connectionString = "mongodb+srv://<Username:Password>@shopsmart.ubphc.mongodb.net/?retryWrites=true&w=majority&appName=ShopSmart";
 var databaseName = "Shopsmart";
 Console.WriteLine($"MongoDB Connection String: {connectionString}");
 Console.WriteLine($"MongoDB Database Name: {databaseName}");
