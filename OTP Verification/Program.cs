@@ -14,7 +14,6 @@ Console.WriteLine($"MongoDB Connection String: {connectionString}");
 Console.WriteLine($"MongoDB Database Name: {databaseName}");
 
 // Add services to the container.
-builder.Services.AddScoped<OtpService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddControllers();
 builder.Services.AddSingleton(new OtpRepository(connectionString, databaseName));
