@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/gcp_image
+      - feature/basic-setup
   pull_request:
     branches:
       - main
