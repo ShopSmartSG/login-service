@@ -1,5 +1,7 @@
 package sg.edu.nus.iss.login_service.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import sg.edu.nus.iss.login_service.dto.LoginRequest;
 import sg.edu.nus.iss.login_service.dto.RegisterRequest;
 import sg.edu.nus.iss.login_service.dto.ForgotPasswordRequest;
@@ -16,6 +18,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "User authentication and authorization APIs")
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -29,6 +32,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(summary = "Register a new user")
     public ResponseEntity<String> registerUser(@Valid @RequestBody RegisterRequest request) {
         logger.info("User registration attempt for email: {}", request.getEmail());
         authService.registerUser(request);
@@ -36,6 +40,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Login a user")
     public ResponseEntity<String> loginUser(@Valid @RequestBody LoginRequest request) {
         logger.info("User login attempt for email: {}", request.getEmail());
         boolean authenticated = Boolean.parseBoolean(authService.loginUser(request));
@@ -47,6 +52,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password")
     public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         logger.info("Forgot password request for email: {}", request.getEmail());
         otpService.generateOtp(request.getEmail());
@@ -54,6 +60,7 @@ public class AuthController {
     }
 
     @PostMapping("/validate-otp")
+    @Operation(summary = "Validate OTP")
     public ResponseEntity<String> validateOtp(@Valid @RequestBody OtpRequest request) {
         logger.info("OTP validation attempt for email: {}", request.getEmail());
         boolean isValid = otpService.validateOtp(request.getEmail(), request.getOtp());
@@ -65,6 +72,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
+    @Operation(summary = "Reset password")
     public ResponseEntity<String> resetPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         logger.info("Reset password request for email: {}", request.getEmail());
 
