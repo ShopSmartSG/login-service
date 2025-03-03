@@ -1,8 +1,8 @@
 package sg.edu.nus.iss.login_service.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -15,7 +15,7 @@ public class RegisterRequest {
     @NotBlank(message = "Full name is required")
     private String fullName;
 
-    @Email(message = "Invalid email format")
+    @Email(message="Email should be valid")
     @NotBlank(message = "Email is required")
     private String email;
 
