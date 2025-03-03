@@ -17,4 +17,7 @@ public class LoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    @NotBlank(message = "OTP is required")
+    private String otp;
 }

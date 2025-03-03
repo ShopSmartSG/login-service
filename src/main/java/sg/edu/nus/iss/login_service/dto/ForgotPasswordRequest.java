@@ -16,6 +16,9 @@ public class ForgotPasswordRequest {
     @NotBlank(message = "Email is required")
     private String email;
 
+    @NotEmpty(message = "Otp is required be empty")
+    private String otp;
+
     @NotEmpty(message = "New password cannot be empty")
     private String newPassword;
 }

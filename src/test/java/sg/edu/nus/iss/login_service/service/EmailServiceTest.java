@@ -1,55 +1,67 @@
 package sg.edu.nus.iss.login_service.service;
 
-import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 class EmailServiceTest {
+
+    @InjectMocks
+    private EmailService emailService;
 
     @Mock
     private JavaMailSender mailSender;
 
     @Mock
-    private MimeMessage mimeMessage;
-
-    @Mock
-    private MimeMessageHelper mimeMessageHelper;
-
-    @InjectMocks
-    private EmailService emailService;
+    private SimpleMailMessage simpleMailMessage;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@example.com");
     }
 
     @Test
-    void testSendOtpEmail_Success() throws Exception {
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        doNothing().when(mailSender).send(any(MimeMessage.class));
+    void testSendOtpEmail_Success() {
+        String toEmail = "test@example.com";
+        String otp = "123456";
 
-        emailService.sendOtpEmail("user@example.com", "123456");
+        // Mocking the behavior of mailSender.send() to ensure it doesn't send emails
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
-        verify(mailSender, times(1)).send(mimeMessage);
+        // Call the method
+        SimpleMailMessage message = emailService.sendOtpEmail(toEmail, otp);
+
+        // Verify that mailSender.send() was called once
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+
+        // Validate that the message was constructed correctly
+        assertEquals(toEmail, message.getTo()[0]);
+        assertEquals("Your OTP Code", message.getSubject());
+        assertEquals("Your OTP is: " + otp, message.getText());
     }
 
     @Test
-    void testSendOtpEmail_Failure() throws Exception {
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        doThrow(new RuntimeException("Email send failure"))
-                .when(mailSender).send(any(MimeMessage.class));
+    void testSendOtpEmail_Failure() {
+        String toEmail = "test@example.com";
+        String otp = "123456";
 
-        assertThrows(RuntimeException.class, () ->
-                emailService.sendOtpEmail("test@example.com", "123456"));
+        // Simulate an exception when sending the email
+        doThrow(new RuntimeException("Email sending failed")).when(mailSender).send(any(SimpleMailMessage.class));
+
+        // Call the method and verify that it throws the expected exception
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            emailService.sendOtpEmail(toEmail, otp);
+        });
+
+        assertEquals("Error sending OTP to email: " + toEmail, exception.getMessage());
     }
 }

@@ -15,17 +15,17 @@ public class HomeControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-//    @Test
-//    public void testHome() throws Exception {
-//        mockMvc.perform(get("/"))
-//                .andExpect(status().isOk())
-//                .andExpect(content().string("Welcome to Shopsmart Login Service"));
-//    }
-//
-//    @Test
-//    public void testHomeWithEmptyPath() throws Exception {
-//        mockMvc.perform(get(""))
-//                .andExpect(status().isOk())
-//                .andExpect(content().string("Welcome to Shopsmart Login Service"));
-//    }
+    @Test
+    public void testHome() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Welcome to Shopsmart Login Service"));
+    }
+
+    @Test
+    public void testHomeWithEmptyPath() throws Exception {
+        mockMvc.perform(get(""))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Welcome to Shopsmart Login Service"));
+    }
 }

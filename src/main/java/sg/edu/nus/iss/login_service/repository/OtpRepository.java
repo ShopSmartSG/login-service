@@ -1,9 +1,8 @@
 package sg.edu.nus.iss.login_service.repository;
 
-import sg.edu.nus.iss.login_service.entity.Otp;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import java.util.Optional;
+import sg.edu.nus.iss.login_service.entity.Otp;
 
 public interface OtpRepository extends MongoRepository<Otp, String> {
-    Optional<Otp> findByEmail(String email);
+    Otp findByEmail(String email);
 }

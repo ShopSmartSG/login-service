@@ -1,89 +1,94 @@
 package sg.edu.nus.iss.login_service.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import sg.edu.nus.iss.login_service.dto.LoginRequest;
-import sg.edu.nus.iss.login_service.dto.RegisterRequest;
-import sg.edu.nus.iss.login_service.dto.ForgotPasswordRequest;
-import sg.edu.nus.iss.login_service.dto.OtpRequest;
-import sg.edu.nus.iss.login_service.service.AuthService;
-import sg.edu.nus.iss.login_service.service.OtpService;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import jakarta.validation.Valid;
+import sg.edu.nus.iss.login_service.dto.ForgotPasswordRequest;
+import sg.edu.nus.iss.login_service.dto.LoginRequest;
+import sg.edu.nus.iss.login_service.dto.RegisterRequest;
+import sg.edu.nus.iss.login_service.dto.ResetPasswordRequest;
+import sg.edu.nus.iss.login_service.service.AuthService;
 
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "Authentication", description = "User authentication and authorization APIs")
 public class AuthController {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    @Autowired
+    private AuthService authService;
 
-    private final AuthService authService;
-    private final OtpService otpService;
+    // Custom Response format with status code and message
+    public static class ApiResponse {
+        private int statusCode;
+        private String message;
 
-    public AuthController(AuthService authService, OtpService otpService) {
-        this.authService = authService;
-        this.otpService = otpService;
-    }
+        public ApiResponse(int statusCode, String message) {
+            this.statusCode = statusCode;
+            this.message = message;
+        }
 
-    @PostMapping("/register")
-    @Operation(summary = "Register a new user")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody RegisterRequest request) {
-        logger.info("User registration attempt for email: {}", request.getEmail());
-        authService.registerUser(request);
-        return ResponseEntity.ok("User registered successfully!");
-    }
+        public int getStatusCode() {
+            return statusCode;
+        }
 
-    @PostMapping("/login")
-    @Operation(summary = "Login a user")
-    public ResponseEntity<String> loginUser(@Valid @RequestBody LoginRequest request) {
-        logger.info("User login attempt for email: {}", request.getEmail());
-        boolean authenticated = Boolean.parseBoolean(authService.loginUser(request));
-        if (authenticated) {
-            return ResponseEntity.ok("Login successful!");
-        } else {
-            return ResponseEntity.status(401).body("Invalid credentials!");
+        public String getMessage() {
+            return message;
         }
     }
 
-    @PostMapping("/forgot-password")
-    @Operation(summary = "Forgot password")
-    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        logger.info("Forgot password request for email: {}", request.getEmail());
-        otpService.generateOtp(request.getEmail());
-        return ResponseEntity.ok("OTP sent to your email.");
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse> register(@RequestBody RegisterRequest request) {
+        try {
+            String response = authService.registerUser(request);
+            return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
+        }
     }
 
-    @PostMapping("/validate-otp")
-    @Operation(summary = "Validate OTP")
-    public ResponseEntity<String> validateOtp(@Valid @RequestBody OtpRequest request) {
-        logger.info("OTP validation attempt for email: {}", request.getEmail());
-        boolean isValid = otpService.validateOtp(request.getEmail(), request.getOtp());
-        if (isValid) {
-            return ResponseEntity.ok("OTP validated successfully!");
-        } else {
-            return ResponseEntity.status(400).body("Invalid or expired OTP.");
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse> login(@RequestBody LoginRequest request) {
+        try {
+            String response = authService.loginUser(request);
+            return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
+        } catch (Exception e) {
+            // Return 401 Unauthorized for login failure with status code and message
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse(HttpStatus.UNAUTHORIZED.value(), e.getMessage()));
+        }
+    }
+
+    @PostMapping("/generate-otp")
+    public ResponseEntity<ApiResponse> generateOtp(@RequestParam String email) {
+        try {
+            String response = authService.generateOtp(email);
+            return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
         }
     }
 
     @PostMapping("/reset-password")
-    @Operation(summary = "Reset password")
-    public ResponseEntity<String> resetPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        logger.info("Reset password request for email: {}", request.getEmail());
-
-        // Call resetPassword from AuthService
-        String result = authService.resetPassword(request.getEmail(), request.getNewPassword());
-
-        if ("Password updated successfully!".equals(result)) {
-            return ResponseEntity.ok("Password updated successfully.");
-        } else {
-            return ResponseEntity.status(400).body(result);
+    public ResponseEntity<ApiResponse> resetPassword(@RequestParam String email, @RequestBody ResetPasswordRequest request) {
+        try {
+            String response = authService.resetPassword(email, request);
+            return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
         }
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            String response = authService.forgotPassword(request);
+            return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
+        }
+    }
 }

@@ -107,6 +107,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
@@ -118,24 +122,6 @@
 			<groupId>jakarta.validation</groupId>
 			<artifactId>jakarta.validation-api</artifactId>
 			<version>3.0.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>javax.mail</groupId>
-			<artifactId>javax.mail-api</artifactId>
-			<version>1.6.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.1.0</version>
 		</dependency>
 	</dependencies>
 
@@ -161,6 +147,12 @@
 				<configuration>
 					<excludes>
 						<exclude>**/sg/edu/nus/iss/login_service/LoginServiceApplication.class</exclude>
+						<!-- Exclude all classes in the model package from code coverage -->
+						<exclude>sg/edu/nus/iss/login_service/entity/**</exclude>
+						<exclude>sg/edu/nus/iss/login_service/exception/**</exclude>
+						<exclude>sg/edu/nus/iss/login_service/config/**</exclude>
+						<exclude>sg/edu/nus/iss/login_service/db/**</exclude>
+						<exclude>sg/edu/nus/iss/login_service/security/**</exclude>
 					</excludes>
 				</configuration>
 				<executions>
@@ -216,22 +208,6 @@
 					</execution>
 				</executions>
 			</plugin>
-<!--			<plugin>-->
-<!--				<groupId>org.owasp</groupId>-->
-<!--				<artifactId>dependency-check-maven</artifactId>-->
-<!--				<version>10.0.2</version>-->
-<!--				<configuration>-->
-<!--					<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>-->
-<!--				</configuration>-->
-<!--				<executions>-->
-<!--					<execution>-->
-<!--						<goals>-->
-<!--							<goal>check</goal>-->
-<!--						</goals>-->
-<!--					</execution>-->
-<!--				</executions>-->
-<!--			</plugin>-->
-
 		</plugins>
 	</build>
 

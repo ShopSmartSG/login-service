@@ -1,21 +1,21 @@
 package sg.edu.nus.iss.login_service.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+import sg.edu.nus.iss.login_service.dto.ForgotPasswordRequest;
 import sg.edu.nus.iss.login_service.dto.LoginRequest;
 import sg.edu.nus.iss.login_service.dto.RegisterRequest;
 import sg.edu.nus.iss.login_service.dto.ResetPasswordRequest;
 import sg.edu.nus.iss.login_service.entity.User;
 import sg.edu.nus.iss.login_service.repository.UserRepository;
-import sg.edu.nus.iss.login_service.security.PasswordEncoderConfig;
-import sg.edu.nus.iss.login_service.service.OtpService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
+
 @Service
 public class AuthService {
 
@@ -28,7 +28,7 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private OtpService otpUtil;
+    private OtpService otpService;
 
     @Autowired
     private EmailService emailService;
@@ -36,8 +36,7 @@ public class AuthService {
     public String registerUser(RegisterRequest request) {
         logger.info("Registering user with email: {}", request.getEmail());
 
-        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
-        if (existingUser.isPresent()) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             logger.warn("Registration failed: Email {} is already in use", request.getEmail());
             return "Email already registered!";
         }
@@ -45,10 +44,9 @@ public class AuthService {
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-
         userRepository.save(user);
-        logger.info("User registered successfully: {}", request.getEmail());
 
+        logger.info("User registered successfully: {}", request.getEmail());
         return "User registered successfully!";
     }
 
@@ -62,39 +60,51 @@ public class AuthService {
         }
 
         User user = userOptional.get();
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            logger.warn("Login failed: Incorrect password for {}", request.getEmail());
+        return validateOtpAndPassword(user, request.getOtp(), request.getPassword());
+    }
+
+    private String validateOtpAndPassword(User user, String otp, String password) {
+        if (user.isLocked() && user.getLockExpiry().isAfter(LocalDateTime.now())) {
+            logger.warn("Login failed: Account locked for {}", user.getEmail());
+            return "Account locked! Try again later.";
+        }
+
+        if (!otpService.validateOtp(user.getEmail(), otp)) {
+            handleFailedAttempt(user);
+            return "Invalid OTP!";
+        }
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            handleFailedAttempt(user);
             return "Invalid credentials!";
         }
 
-        logger.info("User {} logged in successfully", request.getEmail());
+        user.resetFailedAttempts();
+        userRepository.save(user);
+        logger.info("User {} logged in successfully", user.getEmail());
         return "Login successful!";
+    }
+
+    private void handleFailedAttempt(User user) {
+        user.incrementFailedAttempts();
+        if (user.getFailedAttempts() >= 3) {
+            user.lockAccount();
+            logger.warn("User {} locked due to multiple failed attempts", user.getEmail());
+        }
+        userRepository.save(user);
     }
 
     public String generateOtp(String email) {
         logger.info("Generating OTP for email: {}", email);
-
-        Optional<User> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isEmpty()) {
-            logger.warn("OTP request failed: Email {} not found", email);
-            return "Email not registered!";
+        try {
+            return otpService.generateAndStoreOtp(email);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
-        String otp = String.valueOf(otpUtil.generateOtp(email));
-        emailService.sendOtpEmail(email, otp);
-
-        logger.info("OTP sent successfully to {}", email);
-        return "OTP sent to email!";
     }
 
-    public String validateOtp(String email, String otp, ResetPasswordRequest resetRequest) {
-        logger.info("Validating OTP for email: {}", email);
-
-        boolean isValid = otpUtil.validateOtp(email, otp);
-        if (!isValid) {
-            logger.warn("OTP validation failed for {}", email);
-            return "Invalid or expired OTP!";
-        }
+    public String resetPassword(String email, ResetPasswordRequest request) {
+        logger.info("Validating old password for password reset: {}", email);
 
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
@@ -103,59 +113,42 @@ public class AuthService {
         }
 
         User user = userOptional.get();
-        user.setPassword(passwordEncoder.encode(resetRequest.getNewPassword()));
-        userRepository.save(user);
+
+        // Validate the old password
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            return "Old password is incorrect!";
+        }
+
+        // Set the new password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user); // Save the updated user with the new password in one network call
 
         logger.info("Password reset successfully for {}", email);
         return "Password reset successful!";
     }
 
-    // Method to initiate the password reset process (send OTP)
-    // Method to initiate the password reset process (send OTP and reset password)
-    public String resetPassword(String email, String newPassword) {
-        logger.info("Initiating password reset process for email: {}", email);
+    // Forgot password method to handle OTP validation and reset password
+    public String forgotPassword(ForgotPasswordRequest request) {
+        logger.info("Verifying OTP for password reset: {}", request.getEmail());
 
-        // Check if the email exists in the system
-        Optional<User> userOptional = userRepository.findByEmail(email);
+        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
         if (userOptional.isEmpty()) {
-            logger.warn("Password reset failed: Email {} not found", email);
+            logger.warn("Forgot password failed: Email {} not found", request.getEmail());
             return "Email not registered!";
         }
 
-        // Update the user's password
         User user = userOptional.get();
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-
-        logger.info("Password successfully updated for {}", email);
-        return "Password updated successfully!";
-    }
-
-
-    // Method to validate OTP and set new password
-    public String getNewPassword(String email, String otp, String newPassword) {
-        logger.info("Getting new password for email: {}", email);
 
         // Validate the OTP
-        boolean isValidOtp = otpUtil.validateOtp(email, otp);
-        if (!isValidOtp) {
-            logger.warn("OTP validation failed for {}", email);
+        if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
             return "Invalid or expired OTP!";
         }
 
-        // Fetch the user from the database
-        Optional<User> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isEmpty()) {
-            logger.warn("Password reset failed: Email {} not found", email);
-            return "Email not registered!";
-        }
+        // Set the new password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);  // Save the updated user with the new password
 
-        // Update the user's password
-        User user = userOptional.get();
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-
-        logger.info("Password successfully updated for {}", email);
-        return "Password updated successfully!";
+        logger.info("Password reset successfully for {}", request.getEmail());
+        return "Password reset successful!";
     }
 }
