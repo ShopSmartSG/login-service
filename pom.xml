@@ -28,18 +28,18 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<!-- Exclude specific packages from coverage analysis -->
+		<!-- Exclude from coverage calculations -->
 		<sonar.coverage.exclusions>
-			src/main/java/sg/edu/nus/iss/login_service/config/**/*,
-			src/main/java/sg/edu/nus/iss/login_service/db/**/*,
-			src/main/java/sg/edu/nus/iss/login_service/security/**/*
+			**/config/**/*,
+			**/db/**/*,
+			**/security/**/*
 		</sonar.coverage.exclusions>
 
-		<!-- Exclude from overall analysis if needed -->
+		<!-- Exclude from overall analysis -->
 		<sonar.exclusions>
-			src/main/java/sg/edu/nus/iss/login_service/config/**/*,
-			src/main/java/sg/edu/nus/iss/login_service/db/**/*,
-			src/main/java/sg/edu/nus/iss/login_service/security/**/*
+			**/config/**/*,
+			**/db/**/*,
+			**/security/**/*
 		</sonar.exclusions>
 	</properties>
 	<dependencies>
