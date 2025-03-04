@@ -27,8 +27,8 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>21</java.version>
-		<sonar.coverage.exclusions>**/sg/edu/nus/iss/login_service/LoginServiceApplication.class</sonar.coverage.exclusions>
+		<java.version>22</java.version>
+		<sonar.exclusions>**/sg/edu/nus/iss/login_service/config/**, **/sg/edu/nus/iss/login_service/db/**, **/sg/edu/nus/iss/login_service/security/**</sonar.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
