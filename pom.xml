@@ -27,7 +27,7 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>22</java.version>
+		<java.version>21</java.version>
 		<!-- Exclude specific packages from coverage analysis -->
 		<sonar.coverage.exclusions>
 			src/main/java/sg/edu/nus/iss/login_service/config/**/*,
