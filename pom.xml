@@ -36,15 +36,6 @@
 			**/exception/**/*,
 			**/entity/**/*
 		</sonar.coverage.exclusions>
-
-		<!-- Exclude from overall analysis -->
-		<sonar.exclusions>
-			**/config/**/*,
-			**/db/**/*,
-			**/security/**/*
-			**/exception/**/*,
-			**/entity/**/*
-		</sonar.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
