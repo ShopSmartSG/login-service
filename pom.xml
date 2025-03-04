@@ -28,19 +28,13 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<!-- Exclude from coverage calculations -->
 		<sonar.coverage.exclusions>
 			**/config/**/*,
 			**/db/**/*,
-			**/security/**/*
+			**/security/**/*,
+			**/exception/**/*,
+			**/entity/**/*
 		</sonar.coverage.exclusions>
-
-		<!-- Exclude from overall analysis -->
-		<sonar.exclusions>
-			**/config/**/*,
-			**/db/**/*,
-			**/security/**/*
-		</sonar.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
