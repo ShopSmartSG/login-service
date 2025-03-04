@@ -27,7 +27,7 @@ public class EmailService {
     public SimpleMailMessage sendOtpEmail(String toEmail, String otp) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            logger.info("Sending OTP to email: " + toEmail);
+            logger.info("Sending OTP to email");
             message.setTo(toEmail);
             message.setSubject("Your OTP Code");
             message.setText("Your OTP is: " + otp);
@@ -35,7 +35,7 @@ public class EmailService {
             logger.info("OTP email sent to {}", toEmail);
             return message;
         } catch (Exception e){
-            logger.error("Error sending OTP to email: " + toEmail);
+            logger.error("Error sending OTP to email");
             throw new RuntimeException("Error sending OTP to email: " + toEmail, e);
         }
     }

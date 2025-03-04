@@ -65,7 +65,7 @@ public class AuthService {
 
     private String validateOtpAndPassword(User user, String otp, String password) {
         if (user.isLocked() && user.getLockExpiry().isAfter(LocalDateTime.now())) {
-            logger.warn("Login failed: Account locked for {}", user.getEmail());
+            logger.warn("Login failed: Account locked");
             return "Account locked! Try again later.";
         }
 
@@ -81,7 +81,7 @@ public class AuthService {
 
         user.resetFailedAttempts();
         userRepository.save(user);
-        logger.info("User {} logged in successfully", user.getEmail());
+        logger.info("User logged in successfully");
         return "Login successful!";
     }
 
@@ -89,13 +89,13 @@ public class AuthService {
         user.incrementFailedAttempts();
         if (user.getFailedAttempts() >= 3) {
             user.lockAccount();
-            logger.warn("User {} locked due to multiple failed attempts", user.getEmail());
+            logger.warn("User locked due to multiple failed attempts");
         }
         userRepository.save(user);
     }
 
     public String generateOtp(String email) {
-        logger.info("Generating OTP for email: {}", email);
+        logger.info("Generating OTP for email");
         try {
             return otpService.generateAndStoreOtp(email);
         } catch (Exception e) {
@@ -104,11 +104,11 @@ public class AuthService {
     }
 
     public String resetPassword(String email, ResetPasswordRequest request) {
-        logger.info("Validating old password for password reset: {}", email);
+        logger.info("Validating old password for password reset");
 
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
-            logger.warn("Reset password failed: Email {} not found", email);
+            logger.warn("Reset password failed: Email not found");
             return "Email not registered!";
         }
 
@@ -123,17 +123,17 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user); // Save the updated user with the new password in one network call
 
-        logger.info("Password reset successfully for {}", email);
+        logger.info("Password reset successfully");
         return "Password reset successful!";
     }
 
     // Forgot password method to handle OTP validation and reset password
     public String forgotPassword(ForgotPasswordRequest request) {
-        logger.info("Verifying OTP for password reset: {}", request.getEmail());
+        logger.info("Verifying OTP for password reset");
 
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
         if (userOptional.isEmpty()) {
-            logger.warn("Forgot password failed: Email {} not found", request.getEmail());
+            logger.warn("Forgot password failed: Email not found");
             return "Email not registered!";
         }
 
@@ -148,7 +148,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);  // Save the updated user with the new password
 
-        logger.info("Password reset successfully for {}", request.getEmail());
+        logger.info("Password reset successfully");
         return "Password reset successful!";
     }
 }
