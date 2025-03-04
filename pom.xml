@@ -28,7 +28,19 @@
 	</scm>
 	<properties>
 		<java.version>22</java.version>
-		<sonar.exclusions>**/sg/edu/nus/iss/login_service/config/**, **/sg/edu/nus/iss/login_service/db/**, **/sg/edu/nus/iss/login_service/security/**</sonar.exclusions>
+		<!-- Exclude specific packages from coverage analysis -->
+		<sonar.coverage.exclusions>
+			src/main/java/sg/edu/nus/iss/login_service/config/**/*,
+			src/main/java/sg/edu/nus/iss/login_service/db/**/*,
+			src/main/java/sg/edu/nus/iss/login_service/security/**/*
+		</sonar.coverage.exclusions>
+
+		<!-- Exclude from overall analysis if needed -->
+		<sonar.exclusions>
+			src/main/java/sg/edu/nus/iss/login_service/config/**/*,
+			src/main/java/sg/edu/nus/iss/login_service/db/**/*,
+			src/main/java/sg/edu/nus/iss/login_service/security/**/*
+		</sonar.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
