@@ -3,8 +3,7 @@ name: Build and Push to GCP Artifact Registry
 on:
   push:
     branches:
-      - main
-      - feature/gcp_image
+      - feature/*
   pull_request:
     branches:
       - main
@@ -25,7 +24,7 @@ jobs:
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_CRED }}
-
+          
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
