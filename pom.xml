@@ -28,7 +28,13 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<sonar.coverage.exclusions>**/sg/edu/nus/iss/login_service/LoginServiceApplication.class</sonar.coverage.exclusions>
+		<sonar.coverage.exclusions>
+			**/config/**/*,
+			**/db/**/*,
+			**/security/**/*,
+			**/exception/**/*,
+			**/entity/**/*
+		</sonar.coverage.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
