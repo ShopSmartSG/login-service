@@ -6,6 +6,7 @@ import sg.edu.nus.iss.login_service.dto.LoginRequest;
 import sg.edu.nus.iss.login_service.dto.RegisterRequest;
 import sg.edu.nus.iss.login_service.dto.ResetPasswordRequest;
 import sg.edu.nus.iss.login_service.entity.User;
+import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +57,7 @@ public class AuthService {
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
         if (userOptional.isEmpty()) {
             logger.warn("Login failed: Email {} not found", request.getEmail());
-            return "Invalid credentials!";
+            throw new OtpException.InvalidCredentialsException("Invalid credentials! Email not found.");
         }
 
         User user = userOptional.get();
@@ -66,17 +67,17 @@ public class AuthService {
     private String validateOtpAndPassword(User user, String otp, String password) {
         if (user.isLocked() && user.getLockExpiry().isAfter(LocalDateTime.now())) {
             logger.warn("Login failed: Account locked");
-            return "Account locked! Try again later.";
+            throw new OtpException.AccountLockedException("Account locked! Try again later.");
         }
 
         if (!otpService.validateOtp(user.getEmail(), otp)) {
             handleFailedAttempt(user);
-            return "Invalid OTP!";
+            throw new OtpException.InvalidOtpException("Invalid OTP!");
         }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
             handleFailedAttempt(user);
-            return "Invalid credentials!";
+            throw new OtpException.InvalidCredentialsException("Invalid credentials! Incorrect password.");
         }
 
         user.resetFailedAttempts();
@@ -109,14 +110,15 @@ public class AuthService {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
             logger.warn("Reset password failed: Email not found");
-            return "Email not registered!";
+            throw new OtpException.EmailNotFoundException("Email not registered!");
         }
 
         User user = userOptional.get();
 
         // Validate the old password
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            return "Old password is incorrect!";
+            logger.warn("Reset password failed: Old password is incorrect");
+            throw new OtpException.UnprocessableEntityException("Old password is incorrect!"); // Throwing the custom exception
         }
 
         // Set the new password
@@ -134,14 +136,14 @@ public class AuthService {
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
         if (userOptional.isEmpty()) {
             logger.warn("Forgot password failed: Email not found");
-            return "Email not registered!";
+            throw new OtpException.EmailNotFoundException("Email not registered!");
         }
 
         User user = userOptional.get();
 
         // Validate the OTP
         if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
-            return "Invalid or expired OTP!";
+            throw new OtpException.InvalidOtpException("Invalid or expired OTP!");
         }
 
         // Set the new password
