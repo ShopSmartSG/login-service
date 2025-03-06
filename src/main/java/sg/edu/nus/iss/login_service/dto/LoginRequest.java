@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import sg.edu.nus.iss.login_service.entity.ProfileType;
 
 @Data
 @NoArgsConstructor
@@ -20,4 +21,7 @@ public class LoginRequest {
 
     @NotBlank(message = "OTP is required")
     private String otp;
+
+    @NotBlank(message = "Profile type is required")
+    private ProfileType profileType; // Added profileType field
 }

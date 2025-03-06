@@ -1,67 +1,94 @@
 package sg.edu.nus.iss.login_service.service;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+@ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
-
-    @InjectMocks
-    private EmailService emailService;
 
     @Mock
     private JavaMailSender mailSender;
 
-    @Mock
-    private SimpleMailMessage simpleMailMessage;
+    @InjectMocks
+    private EmailService emailService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    private final String testEmail = "test@example.com";
+    private final String testOtp = "123456";
 
     @Test
-    void testSendOtpEmail_Success() {
-        String toEmail = "test@example.com";
-        String otp = "123456";
-
-        // Mocking the behavior of mailSender.send() to ensure it doesn't send emails
+    void testSendOtpEmailForCustomer_Success() {
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
-        // Call the method
-        SimpleMailMessage message = emailService.sendOtpEmail(toEmail, otp);
+        SimpleMailMessage message = emailService.sendOtpEmailForCustomer(testEmail, testOtp);
 
-        // Verify that mailSender.send() was called once
+        assertEquals("Your Customer Dashboard OTP", message.getSubject());
+        assertEquals("Your OTP for accessing the Customer Dashboard is: " + testOtp, message.getText());
+        assertArrayEquals(new String[]{testEmail}, message.getTo());
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
-
-        // Validate that the message was constructed correctly
-        assertEquals(toEmail, message.getTo()[0]);
-        assertEquals("Your OTP Code", message.getSubject());
-        assertEquals("Your OTP is: " + otp, message.getText());
     }
 
     @Test
-    void testSendOtpEmail_Failure() {
-        String toEmail = "test@example.com";
-        String otp = "123456";
+    void testSendOtpEmailForMerchant_Success() {
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
-        // Simulate an exception when sending the email
-        doThrow(new RuntimeException("Email sending failed")).when(mailSender).send(any(SimpleMailMessage.class));
+        SimpleMailMessage message = emailService.sendOtpEmailForMerchant(testEmail, testOtp);
 
-        // Call the method and verify that it throws the expected exception
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            emailService.sendOtpEmail(toEmail, otp);
-        });
+        assertEquals("Your Merchant Dashboard OTP", message.getSubject());
+        assertEquals("Your OTP for accessing the Merchant Dashboard is: " + testOtp, message.getText());
+        assertArrayEquals(new String[]{testEmail}, message.getTo());
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+    }
 
-        assertEquals("Error sending OTP to email: " + toEmail, exception.getMessage());
+    @Test
+    void testSendOtpEmailForDeliveryPartner_Success() {
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
+
+        SimpleMailMessage message = emailService.sendOtpEmailForDeliveryPartner(testEmail, testOtp);
+
+        assertEquals("Your Delivery Partner Dashboard OTP", message.getSubject());
+        assertEquals("Your OTP for accessing the Delivery Partner Dashboard is: " + testOtp, message.getText());
+        assertArrayEquals(new String[]{testEmail}, message.getTo());
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void testSendOtpEmailForCustomer_Failure() {
+        doThrow(new MailException("SMTP error") {}).when(mailSender).send(any(SimpleMailMessage.class));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> emailService.sendOtpEmailForCustomer(testEmail, testOtp));
+
+        assertTrue(exception.getMessage().contains("Error sending OTP to email"));
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void testSendOtpEmailForMerchant_Failure() {
+        doThrow(new MailException("SMTP error") {}).when(mailSender).send(any(SimpleMailMessage.class));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> emailService.sendOtpEmailForMerchant(testEmail, testOtp));
+
+        assertTrue(exception.getMessage().contains("Error sending OTP to email"));
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void testSendOtpEmailForDeliveryPartner_Failure() {
+        doThrow(new MailException("SMTP error") {}).when(mailSender).send(any(SimpleMailMessage.class));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> emailService.sendOtpEmailForDeliveryPartner(testEmail, testOtp));
+
+        assertTrue(exception.getMessage().contains("Error sending OTP to email"));
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 }

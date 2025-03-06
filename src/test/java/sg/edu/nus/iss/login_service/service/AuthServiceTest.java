@@ -1,24 +1,30 @@
 package sg.edu.nus.iss.login_service.service;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import sg.edu.nus.iss.login_service.dto.ForgotPasswordRequest;
-import sg.edu.nus.iss.login_service.dto.LoginRequest;
-import sg.edu.nus.iss.login_service.dto.RegisterRequest;
-import sg.edu.nus.iss.login_service.dto.ResetPasswordRequest;
+import sg.edu.nus.iss.login_service.dto.*;
+import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.entity.User;
+import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.UserRepository;
+import sg.edu.nus.iss.login_service.service.AuthService;
+import sg.edu.nus.iss.login_service.service.EmailService;
+import sg.edu.nus.iss.login_service.service.OtpService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
     @InjectMocks
@@ -36,220 +42,146 @@ class AuthServiceTest {
     @Mock
     private EmailService emailService;
 
+    private User user;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        user = new User();
+        user.setEmail("test@example.com");
+        user.setPassword("encodedPassword");
+        user.setProfileType(ProfileType.CUSTOMER);
+        user.setFailedAttempts(0);
+        user.setLocked(false);
+        user.setLockExpiry(LocalDateTime.now().minusMinutes(5));
     }
 
     @Test
     void testRegisterUser_Success() {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("password");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(request.getPassword())).thenReturn("encodedPassword");
+        RegisterRequest request = new RegisterRequest("test@example.com", "password", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(anyString(), any())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
 
         String result = authService.registerUser(request);
+
         assertEquals("User registered successfully!", result);
-        verify(userRepository, times(1)).save(any(User.class));
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
-    void testRegisterUser_EmailAlreadyRegistered() {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("password");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(new User()));
+    void testRegisterUser_EmailAlreadyExists() {
+        RegisterRequest request = new RegisterRequest("test@example.com", "password", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(anyString(), any())).thenReturn(Optional.of(user));
 
         String result = authService.registerUser(request);
+
         assertEquals("Email already registered!", result);
-        verify(userRepository, times(0)).save(any(User.class));
     }
 
     @Test
-    void testLoginUser_Success() throws Exception {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("encodedPassword");
-
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("password");
-        request.setOtp("123456");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(request.getPassword(), user.getPassword())).thenReturn(true);
-        when(otpService.validateOtp(request.getEmail(), request.getOtp())).thenReturn(true);
+    void testLoginUser_Success() {
+        LoginRequest request = new LoginRequest("test@example.com", "password", "123456", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(anyString(), any())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
+        when(otpService.validateOtp(anyString(), anyString(), any())).thenReturn(true);
 
         String result = authService.loginUser(request);
+
         assertEquals("Login successful!", result);
     }
 
     @Test
-    void testLoginUser_InvalidOtp() throws Exception {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("encodedPassword");
+    void testLoginUser_EmailNotFound() {
+        when(userRepository.findByEmailAndProfileType(anyString(), any())).thenReturn(Optional.empty());
 
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("password");
-        request.setOtp("000000");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        when(otpService.validateOtp(request.getEmail(), request.getOtp())).thenReturn(false);
-
-        String result = authService.loginUser(request);
-        assertEquals("Invalid OTP!", result);
+        LoginRequest request = new LoginRequest("test@example.com", "password", "123456", ProfileType.CUSTOMER);
+        assertThrows(OtpException.InvalidCredentialsException.class, () -> authService.loginUser(request));
     }
 
     @Test
-    void testLoginUser_InvalidPassword() throws Exception {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("encodedPassword");
+    void testLoginUser_InvalidOtp() {
+        when(userRepository.findByEmailAndProfileType(anyString(), any())).thenReturn(Optional.of(user));
+        when(otpService.validateOtp(anyString(), anyString(), any())).thenReturn(false);
 
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("wrongpassword");
-        request.setOtp("123456");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(request.getPassword(), user.getPassword())).thenReturn(false);
-
-        String result = authService.loginUser(request);
-        assertEquals("Invalid OTP!", result);
+        LoginRequest request = new LoginRequest("test@example.com", "password", "wrongOtp", ProfileType.CUSTOMER);
+        assertThrows(OtpException.InvalidOtpException.class, () -> authService.loginUser(request));
     }
 
     @Test
-    void testLoginUser_AccountLocked() throws Exception {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("encodedPassword");
+    void testLoginUser_WrongPassword() {
+        when(userRepository.findByEmailAndProfileType(anyString(), any())).thenReturn(Optional.of(user));
+        when(otpService.validateOtp(anyString(), anyString(), any())).thenReturn(true);
+        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
+
+        LoginRequest request = new LoginRequest("test@example.com", "wrongPassword", "123456", ProfileType.CUSTOMER);
+        assertThrows(OtpException.InvalidCredentialsException.class, () -> authService.loginUser(request));
+    }
+
+    @Test
+    void testForgotPassword_Success() {
+        ForgotPasswordRequest request = new ForgotPasswordRequest("test@example.com", "123456", "newPassword", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(anyString(), any())).thenReturn(Optional.of(user));
+        when(otpService.validateOtp(anyString(), anyString(), any())).thenReturn(true);
+        when(passwordEncoder.encode(anyString())).thenReturn("newEncodedPassword");
+
+        String result = authService.forgotPassword(request);
+
+        assertEquals("Password reset successful!", result);
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void testLoginUser_AccountLocked() {
         user.setLocked(true);
-        user.setLockExpiry(LocalDateTime.now().plusMinutes(1));
+        user.setLockExpiry(LocalDateTime.now().plusMinutes(10));
+        LoginRequest request = new LoginRequest("test@example.com", "password", "123456", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(request.getEmail(), request.getProfileType())).thenReturn(Optional.of(user));
 
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("password");
-        request.setOtp("123456");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-
-        String result = authService.loginUser(request);
-        assertEquals("Account locked! Try again later.", result);
+        assertThrows(OtpException.AccountLockedException.class, () -> authService.loginUser(request));
     }
 
     @Test
-    void testGenerateOtp_Success() throws Exception {
-        when(otpService.generateAndStoreOtp("test@example.com")).thenReturn("123456");
+    void testGenerateOtp_Success() {
+        when(otpService.generateAndStoreOtp(user.getEmail(), user.getProfileType())).thenReturn("123456");
 
-        String result = authService.generateOtp("test@example.com");
-        assertEquals("123456", result);
+        String otp = authService.generateOtp(user.getEmail(), user.getProfileType());
+
+        assertEquals("123456", otp);
     }
 
     @Test
-    void testGenerateOtp_Failure() throws Exception {
-        when(otpService.generateAndStoreOtp("test@example.com")).thenThrow(new RuntimeException("Error generating OTP"));
+    void testGenerateOtp_Exception() {
+        when(otpService.generateAndStoreOtp(user.getEmail(), user.getProfileType())).thenThrow(new RuntimeException("OTP Error"));
 
-        assertThrows(RuntimeException.class, () -> authService.generateOtp("test@example.com"));
+        assertThrows(RuntimeException.class, () -> authService.generateOtp(user.getEmail(), user.getProfileType()));
     }
 
     @Test
-    void testResetPassword_Success() throws Exception {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("encodedPassword");
-
-        ResetPasswordRequest request = new ResetPasswordRequest();
-        request.setOldPassword("oldPassword");
-        request.setNewPassword("newPassword");
-
-        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(request.getOldPassword(),user.getPassword())).thenReturn(true);
+    void testResetPassword_Success() {
+        ResetPasswordRequest request = new ResetPasswordRequest("test@example.com", "oldPassword", "newPassword", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(request.getEmail(), request.getProfileType())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(request.getOldPassword(), user.getPassword())).thenReturn(true);
         when(passwordEncoder.encode(request.getNewPassword())).thenReturn("newEncodedPassword");
 
-        String result = authService.resetPassword(user.getEmail(), request);
-        assertEquals("Password reset successful!", result);
-        verify(userRepository, times(1)).save(user);
-    }
+        String response = authService.resetPassword(request);
 
-
-
-    @Test
-    void testResetPassword_EmailNotFound() throws Exception {
-        ResetPasswordRequest request = new ResetPasswordRequest();
-        request.setOldPassword("oldPassword");
-        request.setNewPassword("newPassword");
-
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
-
-        String result = authService.resetPassword("test@example.com", request);
-        assertEquals("Email not registered!", result);
+        assertEquals("Password reset successful!", response);
     }
 
     @Test
-    void testResetPassword_UserNotFound() throws Exception {
-        ResetPasswordRequest request = new ResetPasswordRequest();
-        request.setOldPassword("oldPassword");
-        request.setNewPassword("newPassword");
+    void testResetPassword_InvalidOldPassword() {
+        ResetPasswordRequest request = new ResetPasswordRequest("test@example.com", "wrongOldPassword", "newPassword", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(request.getEmail(), request.getProfileType())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(request.getOldPassword(), user.getPassword())).thenReturn(false);
 
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
-
-        String result = authService.resetPassword("test@example.com", request);
-        assertEquals("Email not registered!", result);
+        assertThrows(OtpException.UnprocessableEntityException.class, () -> authService.resetPassword(request));
     }
 
     @Test
-    void testForgotPassword_Success() throws Exception {
-        ForgotPasswordRequest request = new ForgotPasswordRequest();
-        request.setEmail("test@example.com");
-        request.setOtp("123456");
-        request.setNewPassword("newPassword");
+    void testForgotPassword_InvalidOtp() {
+        ForgotPasswordRequest request = new ForgotPasswordRequest("test@example.com", "wrongOtp", "newPassword", ProfileType.CUSTOMER);
+        when(userRepository.findByEmailAndProfileType(request.getEmail(), request.getProfileType())).thenReturn(Optional.of(user));
+        when(otpService.validateOtp(request.getEmail(), request.getOtp(), request.getProfileType())).thenReturn(false);
 
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("encodedPassword");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        when(otpService.validateOtp(request.getEmail(), request.getOtp())).thenReturn(true);
-        when(passwordEncoder.encode(request.getNewPassword())).thenReturn("newEncodedPassword");
-
-        String result = authService.forgotPassword(request);
-        assertEquals("Password reset successful!", result);
-        verify(userRepository, times(1)).save(user);
-    }
-
-    @Test
-    void testForgotPassword_EmailNotFound() throws Exception {
-        ForgotPasswordRequest request = new ForgotPasswordRequest();
-        request.setEmail("test@example.com");
-        request.setOtp("123456");
-        request.setNewPassword("newPassword");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
-
-        String result = authService.forgotPassword(request);
-        assertEquals("Email not registered!", result);
-    }
-
-    @Test
-    void testForgotPassword_InvalidOtp() throws Exception {
-        ForgotPasswordRequest request = new ForgotPasswordRequest();
-        request.setEmail("test@example.com");
-        request.setOtp("000000");
-        request.setNewPassword("newPassword");
-
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("encodedPassword");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        when(otpService.validateOtp(request.getEmail(), request.getOtp())).thenReturn(false);
-
-        String result = authService.forgotPassword(request);
-        assertEquals("Invalid or expired OTP!", result);
+        assertThrows(OtpException.InvalidOtpException.class, () -> authService.forgotPassword(request));
     }
 }

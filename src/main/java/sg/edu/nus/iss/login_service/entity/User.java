@@ -19,6 +19,7 @@ public class User {
     private String password; // Hashed password
     private String lastOtpCode; // Stores last generated OTP
     private LocalDateTime otpExpiry; // Expiry time for OTP
+    private ProfileType profileType;
 
     private int failedAttempts;
     private boolean locked;

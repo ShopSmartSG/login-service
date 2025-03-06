@@ -24,19 +24,51 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public SimpleMailMessage sendOtpEmail(String toEmail, String otp) {
+    public SimpleMailMessage sendOtpEmailForCustomer(String toEmail, String otp) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            logger.info("Sending OTP to email");
+            logger.info("Sending OTP for Customer to email");
             message.setTo(toEmail);
-            message.setSubject("Your OTP Code");
-            message.setText("Your OTP is: " + otp);
+            message.setSubject("Your Customer Dashboard OTP");
+            message.setText("Your OTP for accessing the Customer Dashboard is: " + otp);
             mailSender.send(message);
             logger.info("OTP email sent to {}", toEmail);
             return message;
-        } catch (Exception e){
-            logger.error("Error sending OTP to email");
-            throw new RuntimeException("Error sending OTP to email: " + toEmail, e);
+        } catch (Exception e) {
+            logger.error("Error sending OTP for Customer to email");
+            throw new RuntimeException("Error sending OTP to email. " + e);
+        }
+    }
+
+    public SimpleMailMessage sendOtpEmailForMerchant(String toEmail, String otp) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            logger.info("Sending OTP for Merchant to email");
+            message.setTo(toEmail);
+            message.setSubject("Your Merchant Dashboard OTP");
+            message.setText("Your OTP for accessing the Merchant Dashboard is: " + otp);
+            mailSender.send(message);
+            logger.info("OTP email sent to {}", toEmail);
+            return message;
+        } catch (Exception e) {
+            logger.error("Error sending OTP for Merchant to email");
+            throw new RuntimeException("Error sending OTP to email. " + e);
+        }
+    }
+
+    public SimpleMailMessage sendOtpEmailForDeliveryPartner(String toEmail, String otp) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            logger.info("Sending OTP for Delivery Partner to email");
+            message.setTo(toEmail);
+            message.setSubject("Your Delivery Partner Dashboard OTP");
+            message.setText("Your OTP for accessing the Delivery Partner Dashboard is: " + otp);
+            mailSender.send(message);
+            logger.info("OTP email sent to {}", toEmail);
+            return message;
+        } catch (Exception e) {
+            logger.error("Error sending OTP for Delivery Partnerr to email");
+            throw new RuntimeException("Error sending OTP to email. " + e);
         }
     }
 }

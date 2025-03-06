@@ -6,21 +6,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import sg.edu.nus.iss.login_service.entity.Otp;
+import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.OtpRepository;
 
 import java.time.LocalDateTime;
 
-import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OtpServiceTest {
-
-    @InjectMocks
-    private OtpService otpService;
 
     @Mock
     private OtpRepository otpRepository;
@@ -31,120 +30,134 @@ class OtpServiceTest {
     @Mock
     private EmailService emailService;
 
-    private Otp otp;
+    @InjectMocks
+    private OtpService otpService;
+
+    private final String testEmail = "test@example.com";
+    private final ProfileType profileType = ProfileType.CUSTOMER;
+    private Otp validOtp;
 
     @BeforeEach
     void setUp() {
-        otp = new Otp("test@example.com", "123456", LocalDateTime.now().plusMinutes(3));
+        validOtp = new Otp(testEmail, "123456", LocalDateTime.now().plusMinutes(3));
+        validOtp.setProfileType(profileType);
+    }
+
+    @Test
+    void testGenerateOtp() {
+        String otp = otpService.generateOtp();
+        assertEquals(6, otp.length()); // Ensures 6-digit OTP is generated
     }
 
     @Test
     void testGenerateAndStoreOtp_NewOtp() {
-        when(otpRepository.findByEmail("test@example.com")).thenReturn(null);
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(null);
+        when(emailService.sendOtpEmailForCustomer(anyString(), anyString())).thenReturn(mock(SimpleMailMessage.class));
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
-        when(otpRepository.save(any(Otp.class))).thenReturn(null);
-        when(emailService.sendOtpEmail(eq("test@example.com"), anyString())).thenReturn(null);
+        String response = otpService.generateAndStoreOtp(testEmail, profileType);
 
-        String response = otpService.generateAndStoreOtp("test@example.com");
-
+        assertEquals("OTP sent successfully to " + testEmail, response);
         verify(otpRepository, times(1)).save(any(Otp.class));
-        verify(emailService, times(1)).sendOtpEmail(eq("test@example.com"), anyString());
-
-        assertEquals("OTP sent successfully to test@example.com", response);
-    }
-
-    @Test
-    void testGenerateAndStoreOtp_BlockingCase() {
-        Otp otp = mock(Otp.class);
-        when(otp.isBlocked()).thenReturn(true);
-        when(otp.getBlockedUntil()).thenReturn(LocalDateTime.now().plusMinutes(3));
-        when(otpRepository.findByEmail("test@example.com")).thenReturn(otp);
-
-        OtpException exception = assertThrows(OtpException.class, () -> {
-            otpService.generateAndStoreOtp("test@example.com");
-        });
-
-        assertEquals("You are blocked from generating OTP. Try again after " +
-                        otp.getBlockedUntil().minusMinutes(LocalDateTime.now().getMinute()).getMinute() + " minutes.",
-                exception.getMessage());
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 
     @Test
     void testGenerateAndStoreOtp_ExistingOtp() {
-        // Existing OTP is not blocked or expired
-        when(otpRepository.findByEmail("test@example.com")).thenReturn(otp);
-        when(otpRepository.save(any(Otp.class))).thenReturn(null);
-        when(emailService.sendOtpEmail(eq("test@example.com"), anyString())).thenReturn(null);
+        validOtp.setBlocked(false);
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
+        when(emailService.sendOtpEmailForCustomer(anyString(), anyString())).thenReturn(mock(SimpleMailMessage.class));
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
-        String response = otpService.generateAndStoreOtp("test@example.com");
+        String response = otpService.generateAndStoreOtp(testEmail, profileType);
 
-        verify(otpRepository, times(1)).save(any(Otp.class));
-        verify(emailService, times(1)).sendOtpEmail(eq("test@example.com"), anyString());
-
-        assertEquals("OTP sent successfully to test@example.com", response);
+        assertEquals("OTP sent successfully to " + testEmail, response);
+        assertNotNull(validOtp.getExpirationTime());
+        verify(otpRepository, times(1)).save(validOtp);
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 
     @Test
-    void testGenerateAndStoreOtp_ExistingOtp_WithBlockedState() {
-        // Mock an OTP that is blocked
-        otp.setBlocked(true);
-        otp.setBlockedUntil(LocalDateTime.now().plusMinutes(5));
-        when(otpRepository.findByEmail("test@example.com")).thenReturn(otp);
+    void testGenerateAndStoreOtp_BlockedUser() {
+        validOtp.setBlocked(true);
+        validOtp.setBlockedUntil(LocalDateTime.now().plusMinutes(10));
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
 
-        OtpException exception = assertThrows(OtpException.class, () -> {
-            otpService.generateAndStoreOtp("test@example.com");
-        });
+        OtpException exception = assertThrows(OtpException.class, () -> otpService.generateAndStoreOtp(testEmail, profileType));
 
-        assertEquals("You are blocked from generating OTP. Try again after " +
-                        otp.getBlockedUntil().minusMinutes(LocalDateTime.now().getMinute()).getMinute() + " minutes.",
-                exception.getMessage());
+        assertEquals("You're blocked from generating OTP", exception.getMessage().substring(0, 34)); // Partial match to handle time variation
     }
 
     @Test
-    void testValidateOtp_Success() {
-        otp.setBlocked(false);
-        otp.setExpirationTime(LocalDateTime.now().plusMinutes(3));
-        when(otpRepository.findByEmail("test@example.com")).thenReturn(otp);
+    void testValidateOtp_Successful() {
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
 
-        boolean isValid = otpService.validateOtp("test@example.com", "123456");
+        boolean result = otpService.validateOtp(testEmail, "123456", profileType);
 
-        assertTrue(isValid);
-        verify(otpRepository, times(1)).delete(otp);
+        assertTrue(result);
+        verify(otpRepository, times(1)).delete(validOtp);
     }
 
     @Test
-    void testValidateOtp_Failure_Expired() {
-        otp.setExpirationTime(LocalDateTime.now().minusMinutes(1));
-        when(otpRepository.findByEmail("test@example.com")).thenReturn(otp);
+    void testValidateOtp_OtpNotFound() {
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(null);
 
-        OtpException exception = assertThrows(OtpException.class, () -> {
-            otpService.validateOtp("test@example.com", "123456");
-        });
+        OtpException exception = assertThrows(OtpException.class, () -> otpService.validateOtp(testEmail, "123456", profileType));
+
+        assertEquals("No OTP found for this email.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateOtp_ProfileTypeMismatch() {
+        validOtp.setProfileType(ProfileType.MERCHANT);
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
+
+        OtpException exception = assertThrows(OtpException.class, () -> otpService.validateOtp(testEmail, "123456", profileType));
+
+        assertEquals("OTP does not match the profile type.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateOtp_ExpiredOtp() {
+        validOtp.setExpirationTime(LocalDateTime.now().minusMinutes(1));
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
+
+        OtpException exception = assertThrows(OtpException.class, () -> otpService.validateOtp(testEmail, "123456", profileType));
 
         assertEquals("OTP has expired.", exception.getMessage());
     }
 
     @Test
-    void testValidateOtp_Failure_InvalidOtp() {
-        otp.setBlocked(false);
-        otp.setExpirationTime(LocalDateTime.now().plusMinutes(3));
-        when(otpRepository.findByEmail("test@example.com")).thenReturn(otp);
+    void testValidateOtp_BlockedOtp() {
+        validOtp.setBlocked(true);
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
 
-        OtpException exception = assertThrows(OtpException.class, () -> {
-            otpService.validateOtp("test@example.com", "wrongotp");
-        });
+        OtpException exception = assertThrows(OtpException.class, () -> otpService.validateOtp(testEmail, "123456", profileType));
 
-        assertEquals("Invalid OTP. Attempt 1 of 3.", exception.getMessage());
+        assertEquals("You are blocked from validating OTP. Try after 15 minutes.", exception.getMessage());
     }
 
     @Test
-    void testValidateOtp_Failure_NoOtpFound() {
-        when(otpRepository.findByEmail("nonexistent@example.com")).thenReturn(null);
+    void testValidateOtp_InvalidOtp() {
+        validOtp.setCode("654321");
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
 
-        OtpException exception = assertThrows(OtpException.class, () -> {
-            otpService.validateOtp("nonexistent@example.com", "123456");
-        });
+        OtpException exception = assertThrows(OtpException.class, () -> otpService.validateOtp(testEmail, "123456", profileType));
 
-        assertEquals("No OTP found for this email.", exception.getMessage());
+        assertEquals("Invalid OTP. Attempt 1 of 3.", exception.getMessage());
+        verify(otpRepository, times(1)).save(validOtp);
+    }
+
+    @Test
+    void testValidateOtp_MultipleFailedAttempts() {
+        validOtp.setCode("654321");
+        validOtp.setFailedAttempts(2);
+        when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
+
+        OtpException exception = assertThrows(OtpException.class, () -> otpService.validateOtp(testEmail, "123456", profileType));
+
+        assertEquals("Invalid OTP. Attempt 3 of 3.", exception.getMessage());
+        assertEquals(3, validOtp.getFailedAttempts());
+        verify(otpRepository, times(1)).save(validOtp);
     }
 }

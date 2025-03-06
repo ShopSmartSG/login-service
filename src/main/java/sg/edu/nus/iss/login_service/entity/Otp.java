@@ -25,6 +25,7 @@ public class Otp {
     private LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(3);
     private int failedAttempts = 0;
     private boolean blocked;  // Blocked status after maximum attempts
+    private ProfileType profileType;
     @Setter
     private LocalDateTime blockedUntil; // Null if not blocked
 

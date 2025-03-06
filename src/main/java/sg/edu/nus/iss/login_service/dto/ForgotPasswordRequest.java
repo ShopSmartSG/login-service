@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import sg.edu.nus.iss.login_service.entity.ProfileType;
 
 @Data
 @NoArgsConstructor
@@ -21,4 +22,7 @@ public class ForgotPasswordRequest {
 
     @NotEmpty(message = "New password cannot be empty")
     private String newPassword;
+
+    @NotBlank(message = "Profile type is required")
+    private ProfileType profileType; // Added profileType field
 }

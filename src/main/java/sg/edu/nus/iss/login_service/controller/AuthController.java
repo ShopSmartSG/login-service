@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sg.edu.nus.iss.login_service.dto.*;
+import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.service.AuthService;
 import sg.edu.nus.iss.login_service.service.OtpService;
@@ -54,9 +55,9 @@ public class AuthController {
     }
 
     @PostMapping("/generate-otp")
-    public ResponseEntity<ApiResponse> generateOtp(@RequestParam String email) {
+    public ResponseEntity<ApiResponse> generateOtp(@RequestParam String email, @RequestParam ProfileType profileType) {
         try {
-            String response = authService.generateOtp(email);
+            String response = authService.generateOtp(email, profileType);
             return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -107,8 +108,14 @@ public class AuthController {
     @PostMapping("/validate-otp")
     public ResponseEntity<ApiResponse> validateOtp(@RequestBody OtpRequest otpRequest) {
         try {
-            boolean isValid = otpService.validateOtp(otpRequest.getEmail(), otpRequest.getOtp());
-            return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), "OTP validated successfully"));
+            boolean isValid = otpService.validateOtp(otpRequest.getEmail(), otpRequest.getOtp(), otpRequest.getProfileType());
+            if (isValid) {
+                return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), "OTP validated successfully"));
+            } else {
+                // In case the service method doesn't throw an exception but returns false
+                return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                        .body(new ApiResponse(HttpStatus.UNPROCESSABLE_ENTITY.value(), "Invalid OTP"));
+            }
         } catch (OtpException.InvalidOtpException e) {
             // Return 422 Unprocessable Entity if OTP is invalid or expired
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
@@ -121,9 +128,9 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse> resetPassword(@RequestParam String email, @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<ApiResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
         try {
-            String response = authService.resetPassword(email, request);
+            String response = authService.resetPassword(request);
             return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
         } catch (OtpException.OldPasswordIncorrectException e) {
             // Return 422 Unprocessable Entity if the old password is incorrect
