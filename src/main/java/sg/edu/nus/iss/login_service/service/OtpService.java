@@ -40,7 +40,7 @@ public class OtpService {
             mailSender.send(emailService.sendOtpEmailForCustomer(email, otpCode));
         } else if (profileType == ProfileType.MERCHANT) {
             mailSender.send(emailService.sendOtpEmailForMerchant(email, otpCode));
-        } else if (profileType == ProfileType.DELIVERY_PERSON) {
+        } else if (profileType == ProfileType.DELIVERY) {
             mailSender.send(emailService.sendOtpEmailForDeliveryPartner(email, otpCode));
         }
     }
