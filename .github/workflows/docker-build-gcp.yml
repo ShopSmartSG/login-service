@@ -3,10 +3,10 @@ name: Build and Push to GCP Artifact Registry
 on:
   push:
     branches:
-      - feature/*
-  pull_request:
-    branches:
-      - main
+      - feature/mongo_test
+#  pull_request:
+#    branches:
+#      - main
   workflow_dispatch:
 
 jobs:

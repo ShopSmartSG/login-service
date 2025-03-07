@@ -78,6 +78,9 @@ public class MongoSingleton {
 
     private static MongoClient createMongoClient(String dbName) {
         log.info("Creating MongoClient for DB: {}", dbName);
+        log.info("MongoDB SRV: {}", staticMongoSrv);
+        log.info("MongoDB Username: {}", dbName.equals(staticUserDb) ? staticUserDbUsername : staticOtpDbUsername);
+        log.info("MongoDB Password: {}", dbName.equals(staticUserDb) ? staticUserDbPassword : staticOtpDbPassword);
         ConnectionString connectionString = new ConnectionString(staticMongoSrv);
 
         MongoClientSettings settings = MongoClientSettings.builder()
