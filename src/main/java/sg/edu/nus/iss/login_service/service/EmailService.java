@@ -7,7 +7,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Properties;
+import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
 
 @Service
 public class EmailService {
@@ -16,12 +16,15 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    private LogMaskingUtil logMaskingUtil;
+
     @Value("${spring.mail.username}")
     private String fromEmail;
 
     @Autowired
-    public EmailService(JavaMailSender mailSender) {
+    public EmailService(JavaMailSender mailSender, LogMaskingUtil logMaskingUtil) {
         this.mailSender = mailSender;
+        this.logMaskingUtil = logMaskingUtil;
     }
 
     public SimpleMailMessage sendOtpEmailForCustomer(String toEmail, String otp) {
@@ -33,7 +36,7 @@ public class EmailService {
             message.setText("Your OTP for accessing the Customer Dashboard is: " + otp);
             logger.debug("starting to trigger mail for email: {}", toEmail);
             mailSender.send(message);
-            logger.info("OTP email sent to {}", toEmail);
+            logger.info("OTP email sent to {}", logMaskingUtil.maskEmail(toEmail));
             return message;
         } catch (Exception e) {
             logger.error("Error sending OTP for Customer to email : ", e);
@@ -50,7 +53,7 @@ public class EmailService {
             message.setText("Your OTP for accessing the Merchant Dashboard is: " + otp);
             logger.debug("starting to trigger mail for email: {}", toEmail);
             mailSender.send(message);
-            logger.info("OTP email sent to {}", toEmail);
+            logger.info("OTP email sent to {}", logMaskingUtil.maskEmail(toEmail));
             return message;
         } catch (Exception e) {
             logger.error("Error sending OTP for Merchant to email : ", e);
@@ -67,7 +70,7 @@ public class EmailService {
             message.setText("Your OTP for accessing the Delivery Partner Dashboard is: " + otp);
             logger.debug("starting to trigger mail for email: {}", toEmail);
             mailSender.send(message);
-            logger.info("OTP email sent to {}", toEmail);
+            logger.info("OTP email sent to {}", logMaskingUtil.maskEmail(toEmail));
             return message;
         } catch (Exception e) {
             logger.error("Error sending OTP for Delivery Partnerr to email : ", e);

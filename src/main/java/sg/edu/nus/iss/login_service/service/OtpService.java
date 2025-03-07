@@ -10,6 +10,8 @@ import sg.edu.nus.iss.login_service.entity.Otp;
 import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.OtpRepository;
+import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
+
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
@@ -21,12 +23,14 @@ public class OtpService {
     private final OtpRepository otpRepository;
     private final JavaMailSender mailSender;
     private EmailService emailService;
+    private LogMaskingUtil logMaskingUtil;
 
     @Autowired
-    public OtpService(OtpRepository otpRepository, JavaMailSender mailSender, EmailService emailService) {
+    public OtpService(OtpRepository otpRepository, JavaMailSender mailSender, EmailService emailService, LogMaskingUtil logMaskingUtil) {
         this.otpRepository = otpRepository;
         this.mailSender = mailSender;
         this.emailService = emailService;
+        this.logMaskingUtil = logMaskingUtil;
 
     }
 
@@ -82,7 +86,7 @@ public class OtpService {
             logger.info("Sending OTP email for user with profileType {}", profileType);
             sendOtpEmailBasedOnProfileType(email, newOtp.getCode(), profileType);
         }
-
+        logger.info("OTP sent successfully to {}", logMaskingUtil.maskEmail(email));
         return "OTP sent successfully to " + email;
     }
 
