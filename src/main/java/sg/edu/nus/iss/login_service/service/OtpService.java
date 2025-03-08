@@ -46,9 +46,11 @@ public class OtpService {
     }
 
     public String generateAndStoreOtp(String email, ProfileType profileType) {
+        logger.info("Starting service to generate OTP for {} for profileType {}", email, profileType);
         Otp existingOtp = otpRepository.findByEmailAndProfileType(email, profileType);
 
         if (existingOtp != null) {
+            logger.info("Existing OTP found for user already with profileType {}", profileType);
             if (existingOtp.isBlocked()) {
                 throw new OtpException("You're blocked from generating OTP. Try again after " +
                         existingOtp.getBlockedUntil().minusMinutes(LocalDateTime.now().getMinute()).getMinute() + " minutes.",
@@ -65,11 +67,13 @@ public class OtpService {
             otpRepository.save(existingOtp);
             sendOtpEmailBasedOnProfileType(email, existingOtp.getCode(), profileType);
         } else {
+            logger.info("Starting Generating new OTP for {} and profileType {}", email, profileType);
             Otp newOtp = new Otp(email, generateOtp(), LocalDateTime.now().plusMinutes(3));
             newOtp.setProfileType(profileType);  // Make sure profileType is set here
             otpRepository.save(newOtp);
 
             // Send customized email based on profileType
+            logger.info("Sending OTP email for user with profileType {}", profileType);
             sendOtpEmailBasedOnProfileType(email, newOtp.getCode(), profileType);
         }
 
@@ -77,6 +81,7 @@ public class OtpService {
     }
 
     public boolean validateOtp(String email, String inputOtp, ProfileType profileType) {
+        logger.info("Starting to validating OTP for {} for profileType {}", email, profileType);
         Otp storedOtp = otpRepository.findByEmailAndProfileType(email, profileType);
 
         if (storedOtp == null) throw new OtpException("No OTP found for this email.", HttpStatus.NOT_FOUND);
@@ -85,9 +90,11 @@ public class OtpService {
         if (storedOtp.isBlocked()) throw new OtpException("You are blocked from validating OTP. Try after 15 minutes.", HttpStatus.FORBIDDEN);
 
         if (storedOtp.getCode().equals(inputOtp)) {
+            logger.info("OTP validated successfully for {}, hence deleting existing otp record", email);
             otpRepository.delete(storedOtp);
             return true;
         } else {
+            logger.info("Invalid OTP provided for {}", email);
             storedOtp.incrementAttempts();
             otpRepository.save(storedOtp);
             logger.error("Invalid OTP. Attempt " + storedOtp.getFailedAttempts() + " of 3.");

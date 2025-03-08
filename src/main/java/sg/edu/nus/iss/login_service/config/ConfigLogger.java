@@ -30,7 +30,7 @@ public class ConfigLogger implements CommandLineRunner {
         logger.info("MongoDB Users DB: {}", mongoUsersDb);
         logger.info("MongoDB Users Username: {}", mongoUsersUsername);
         // If necessary, log a masked version of the password for debugging
-        logger.info("MongoDB Users Password: {}", mongoUsersPassword);
+        logger.info("MongoDB Users Password: {}", maskPassword(mongoUsersPassword));
     }
 
     private String maskPassword(String password) {

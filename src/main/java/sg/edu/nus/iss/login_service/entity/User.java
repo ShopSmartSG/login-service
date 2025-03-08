@@ -1,5 +1,6 @@
 package sg.edu.nus.iss.login_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @Document(collection = "users")
 public class User {
     @Id
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String id = UUID.randomUUID().toString();
     private String email;
     private String password; // Hashed password
