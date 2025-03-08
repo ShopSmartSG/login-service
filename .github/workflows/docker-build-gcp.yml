@@ -3,7 +3,7 @@ name: Build and Push to GCP Artifact Registry
 on:
   push:
     branches:
-      - feature/mongo_test
+      - feature/*
 #  pull_request:
 #    branches:
 #      - main
