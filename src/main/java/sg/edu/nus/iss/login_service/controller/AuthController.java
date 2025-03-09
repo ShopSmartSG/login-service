@@ -1,5 +1,7 @@
 package sg.edu.nus.iss.login_service.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,7 @@ import sg.edu.nus.iss.login_service.service.OtpService;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
 
@@ -57,9 +60,12 @@ public class AuthController {
     @PostMapping("/generate-otp")
     public ResponseEntity<ApiResponse> generateOtp(@RequestParam String email, @RequestParam ProfileType profileType) {
         try {
+            logger.debug("Generating OTP for email: {} with profileType: {}", email, profileType);
             String response = authService.generateOtp(email, profileType);
+            logger.debug("OTP generated successfully for email: {} with response: {}", email, response);
             return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), response));
         } catch (Exception e) {
+            logger.error("Error generating OTP for email: {} with profileType: {} with exception : ", email, profileType, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ApiResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
         }
@@ -108,19 +114,25 @@ public class AuthController {
     @PostMapping("/validate-otp")
     public ResponseEntity<ApiResponse> validateOtp(@RequestBody OtpRequest otpRequest) {
         try {
+            logger.debug("Validating OTP for email: {} with profileType: {} and otp: {}",
+                    otpRequest.getEmail(), otpRequest.getProfileType(), otpRequest.getOtp());
             boolean isValid = otpService.validateOtp(otpRequest.getEmail(), otpRequest.getOtp(), otpRequest.getProfileType());
             if (isValid) {
+                logger.debug("OTP validated successfully for email: {}", otpRequest.getEmail());
                 return ResponseEntity.ok(new ApiResponse(HttpStatus.OK.value(), "OTP validated successfully"));
             } else {
+                logger.debug("Invalid OTP provided for email: {}", otpRequest.getEmail());
                 // In case the service method doesn't throw an exception but returns false
                 return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                         .body(new ApiResponse(HttpStatus.UNPROCESSABLE_ENTITY.value(), "Invalid OTP"));
             }
         } catch (OtpException.InvalidOtpException e) {
+            logger.error("Invalid OTP provided for email: {} with exception: ", otpRequest.getEmail(), e);
             // Return 422 Unprocessable Entity if OTP is invalid or expired
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                     .body(new ApiResponse(HttpStatus.UNPROCESSABLE_ENTITY.value(), e.getMessage()));
         } catch (Exception e) {
+            logger.error("Error validating OTP for email: {} with exception: ", otpRequest.getEmail(), e);
             // Return 400 Bad Request for any other errors
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ApiResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));

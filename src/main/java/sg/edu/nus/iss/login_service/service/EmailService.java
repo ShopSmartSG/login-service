@@ -31,11 +31,12 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Your Customer Dashboard OTP");
             message.setText("Your OTP for accessing the Customer Dashboard is: " + otp);
+            logger.debug("starting to trigger mail for email: {}", toEmail);
             mailSender.send(message);
             logger.info("OTP email sent to {}", toEmail);
             return message;
         } catch (Exception e) {
-            logger.error("Error sending OTP for Customer to email");
+            logger.error("Error sending OTP for Customer to email : ", e);
             throw new RuntimeException("Error sending OTP to email. " + e);
         }
     }
@@ -47,11 +48,12 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Your Merchant Dashboard OTP");
             message.setText("Your OTP for accessing the Merchant Dashboard is: " + otp);
+            logger.debug("starting to trigger mail for email: {}", toEmail);
             mailSender.send(message);
             logger.info("OTP email sent to {}", toEmail);
             return message;
         } catch (Exception e) {
-            logger.error("Error sending OTP for Merchant to email");
+            logger.error("Error sending OTP for Merchant to email : ", e);
             throw new RuntimeException("Error sending OTP to email. " + e);
         }
     }
@@ -63,11 +65,12 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Your Delivery Partner Dashboard OTP");
             message.setText("Your OTP for accessing the Delivery Partner Dashboard is: " + otp);
+            logger.debug("starting to trigger mail for email: {}", toEmail);
             mailSender.send(message);
             logger.info("OTP email sent to {}", toEmail);
             return message;
         } catch (Exception e) {
-            logger.error("Error sending OTP for Delivery Partnerr to email");
+            logger.error("Error sending OTP for Delivery Partnerr to email : ", e);
             throw new RuntimeException("Error sending OTP to email. " + e);
         }
     }
