@@ -1,4 +1,5 @@
 <configuration>
+
     <springProperty scope="context" name="springAppName" source="login-service"/>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
@@ -18,4 +19,5 @@
         <appender-ref ref="FILE"/>
         <appender-ref ref="CONSOLE"/>
     </root>
+
 </configuration>
