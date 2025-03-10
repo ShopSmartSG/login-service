@@ -66,7 +66,6 @@ public class OtpService {
             }
 
             existingOtp.setCode(generateOtp());
-            logger.info("OTP expiration time: " + existingOtp.getExpirationTime() + ", Current time: " + LocalDateTime.now());
             existingOtp.setExpirationTime(LocalDateTime.now().plusMinutes(3));
             existingOtp.setFailedAttempts(0);
             existingOtp.setBlocked(false);
