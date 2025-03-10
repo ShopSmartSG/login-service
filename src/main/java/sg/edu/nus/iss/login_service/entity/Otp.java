@@ -1,5 +1,6 @@
 package sg.edu.nus.iss.login_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class Otp {
 
     @Id
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String id = UUID.randomUUID().toString();
     @Indexed(unique = true)
     private String email;
