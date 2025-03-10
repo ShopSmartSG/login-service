@@ -6,6 +6,7 @@ import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.entity.User;
 import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.UserRepository;
+import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,11 +33,14 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private LogMaskingUtil logMaskingUtil;
+
     public String registerUser(RegisterRequest request) {
-        logger.info("Registering user with email: {}", request.getEmail());
+        logger.info("Registering user with email: {}", logMaskingUtil.maskEmail(request.getEmail()));
 
         if (userRepository.findByEmailAndProfileType(request.getEmail(), request.getProfileType()).isPresent()) {
-            logger.warn("Registration failed: Email {} is already in use", request.getEmail());
+            logger.warn("Registration failed: Email {} is already in use", logMaskingUtil.maskEmail(request.getEmail()));
             return "Email already registered!";
         }
 
@@ -46,23 +50,23 @@ public class AuthService {
         user.setProfileType(request.getProfileType());
         userRepository.save(user);
 
-        logger.info("User registered successfully: {}", request.getEmail());
+        logger.info("User registered successfully: {}", logMaskingUtil.maskEmail(request.getEmail()));
         return "User registered successfully!";
     }
 
     public String loginUser(LoginRequest request) {
-        logger.info("Attempting login for email: {}", request.getEmail());
+        logger.info("Attempting login for email: {}", logMaskingUtil.maskEmail(request.getEmail()));
 
         Optional<User> userOptional = userRepository.findByEmailAndProfileType(request.getEmail(), request.getProfileType());
         if (userOptional.isEmpty()) {
-            logger.warn("Login failed: Email {} not found", request.getEmail());
+            logger.warn("Login failed: Email {} not found", logMaskingUtil.maskEmail(request.getEmail()));
             throw new OtpException.InvalidCredentialsException("Invalid credentials! Email not found.");
         }
 
         User user = userOptional.get();
         // Ensure the password matches the correct profile type
         if (!user.getProfileType().equals(request.getProfileType())) {
-            logger.warn("Login failed: Incorrect profile type for email {}", request.getEmail());
+            logger.warn("Login failed: Incorrect profile type for email {}", logMaskingUtil.maskEmail(request.getEmail()));
             throw new OtpException.InvalidCredentialsException("Invalid profile type!");
         }
         return validateOtpAndPassword(user, request.getOtp(), request.getPassword());
@@ -70,8 +74,8 @@ public class AuthService {
 
     private String validateOtpAndPassword(User user, String otp, String password) {
         if (user.isLocked() && user.getLockExpiry().isAfter(LocalDateTime.now())) {
-            logger.warn("Login failed: Account locked");
-            throw new OtpException.AccountLockedException("Account locked! Try again later.");
+            logger.warn("Login failed for {}: Account locked", logMaskingUtil.maskEmail(user.getEmail()));
+            throw new OtpException.AccountLockedException("Account locked for {}. Try again later.", logMaskingUtil.maskEmail(user.getEmail()));
         }
 
         // Validate OTP for the correct profile type
@@ -110,7 +114,7 @@ public class AuthService {
     }
 
     public String resetPassword(ResetPasswordRequest request) {
-        logger.info("Validating old password for password reset");
+        logger.info("Validating old password for {} for password reset", request.getEmail());
 
         Optional<User> userOptional = userRepository.findByEmailAndProfileType(request.getEmail(), request.getProfileType());
         if (userOptional.isEmpty()) {

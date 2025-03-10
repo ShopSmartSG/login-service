@@ -12,9 +12,8 @@ import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.entity.User;
 import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.UserRepository;
-import sg.edu.nus.iss.login_service.service.AuthService;
-import sg.edu.nus.iss.login_service.service.EmailService;
-import sg.edu.nus.iss.login_service.service.OtpService;
+
+import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -41,6 +40,9 @@ class AuthServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private LogMaskingUtil logMaskingUtil;
 
     private User user;
 

@@ -168,6 +168,7 @@
 						<exclude>sg/edu/nus/iss/login_service/config/**</exclude>
 						<exclude>sg/edu/nus/iss/login_service/db/**</exclude>
 						<exclude>sg/edu/nus/iss/login_service/security/**</exclude>
+						<exclude>sg/edu/nus/iss/login_service/util/**</exclude>
 					</excludes>
 				</configuration>
 				<executions>

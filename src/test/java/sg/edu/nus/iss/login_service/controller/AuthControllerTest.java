@@ -295,7 +295,7 @@ class AuthControllerTest {
         request.setOtp("123456");
 
         when(authService.loginUser(any(LoginRequest.class)))
-                .thenThrow(new OtpException.AccountLockedException("Account locked due to failed attempts"));
+                .thenThrow(new OtpException.AccountLockedException("Account locked due to failed attempts", request.getEmail()));
 
         ResponseEntity<AuthController.ApiResponse> response = authController.login(request);
 

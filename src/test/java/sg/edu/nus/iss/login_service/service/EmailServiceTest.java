@@ -8,6 +8,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -19,6 +21,9 @@ class EmailServiceTest {
 
     @InjectMocks
     private EmailService emailService;
+
+    @Mock
+    private LogMaskingUtil logMaskingUtil;
 
     private final String testEmail = "test@example.com";
     private final String testOtp = "123456";

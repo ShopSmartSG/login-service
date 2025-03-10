@@ -12,6 +12,7 @@ import sg.edu.nus.iss.login_service.entity.Otp;
 import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.OtpRepository;
+import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
 
 import java.time.LocalDateTime;
 
@@ -32,6 +33,9 @@ class OtpServiceTest {
 
     @InjectMocks
     private OtpService otpService;
+
+    @Mock
+    private LogMaskingUtil logMaskingUtil;
 
     private final String testEmail = "test@example.com";
     private final ProfileType profileType = ProfileType.CUSTOMER;

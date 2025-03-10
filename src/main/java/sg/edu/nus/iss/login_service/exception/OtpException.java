@@ -27,7 +27,7 @@ public class OtpException extends RuntimeException {
     }
 
     public static class AccountLockedException extends RuntimeException {
-        public AccountLockedException(String message) {
+        public AccountLockedException(String message, String email) {
             super(message);
         }
     }
