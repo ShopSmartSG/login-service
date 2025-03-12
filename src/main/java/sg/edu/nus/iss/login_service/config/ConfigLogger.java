@@ -29,9 +29,6 @@ public class ConfigLogger implements CommandLineRunner {
     @Value("${spring.mail.password}")
     private String fromEmailPassword;
 
-    @Value("$MAIL_PASSWORD")
-    private String mailPasswordFromEnv;
-
 
     @Override
     public void run(String... args) {
@@ -39,12 +36,10 @@ public class ConfigLogger implements CommandLineRunner {
         logger.info("MongoDB Users DB: {}", mongoUsersDb);
         logger.info("MongoDB Users Username: {}", mongoUsersUsername);
         // If necessary, log a masked version of the password for debugging
-        logger.info("MongoDB Users Password: {}", mongoUsersPassword);
+        logger.info("MongoDB Users Password: {}", maskPassword(mongoUsersPassword));
         logger.info("Email From: {}", fromEmail);
         // If necessary, log a masked version of the password for debugging
-        logger.info("Email Password: {}", fromEmailPassword);
-        logger.info("Email Password from Env: {}", mailPasswordFromEnv);
-        logger.info("Reading password using System.getenv: {}", System.getenv("MAIL_PASSWORD"));
+        logger.info("Email Password: {}", maskPassword(fromEmailPassword));
     }
 
     private String maskPassword(String password) {

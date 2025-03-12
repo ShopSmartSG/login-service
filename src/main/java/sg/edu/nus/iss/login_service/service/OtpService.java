@@ -43,13 +43,13 @@ public class OtpService {
         logger.debug("Sending OTP email for user with profileType {}", profileType);
         if (profileType == ProfileType.CUSTOMER) {
             logger.debug("Sending OTP email for customer");
-            mailSender.send(emailService.sendOtpEmailForCustomer(email, otpCode));
+            emailService.sendOtpEmailForCustomer(email, otpCode);
         } else if (profileType == ProfileType.MERCHANT) {
             logger.debug("Sending OTP email for merchant");
-            mailSender.send(emailService.sendOtpEmailForMerchant(email, otpCode));
+            emailService.sendOtpEmailForMerchant(email, otpCode);
         } else if (profileType == ProfileType.DELIVERY) {
             logger.debug("Sending OTP email for delivery partner");
-            mailSender.send(emailService.sendOtpEmailForDeliveryPartner(email, otpCode));
+            emailService.sendOtpEmailForDeliveryPartner(email, otpCode);
         }
     }
 

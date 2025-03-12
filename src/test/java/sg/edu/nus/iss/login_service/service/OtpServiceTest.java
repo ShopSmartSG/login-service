@@ -57,13 +57,12 @@ class OtpServiceTest {
     void testGenerateAndStoreOtp_NewOtp() {
         when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(null);
         when(emailService.sendOtpEmailForCustomer(anyString(), anyString())).thenReturn(mock(SimpleMailMessage.class));
-        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
         String response = otpService.generateAndStoreOtp(testEmail, profileType);
 
         assertEquals("OTP sent successfully to " + testEmail, response);
         verify(otpRepository, times(1)).save(any(Otp.class));
-        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+        verify(emailService, times(1)).sendOtpEmailForCustomer(anyString(), anyString());
     }
 
     @Test
@@ -71,14 +70,13 @@ class OtpServiceTest {
         validOtp.setBlocked(false);
         when(otpRepository.findByEmailAndProfileType(testEmail, profileType)).thenReturn(validOtp);
         when(emailService.sendOtpEmailForCustomer(anyString(), anyString())).thenReturn(mock(SimpleMailMessage.class));
-        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
         String response = otpService.generateAndStoreOtp(testEmail, profileType);
 
         assertEquals("OTP sent successfully to " + testEmail, response);
         assertNotNull(validOtp.getExpirationTime());
         verify(otpRepository, times(1)).save(validOtp);
-        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+        verify(emailService, times(1)).sendOtpEmailForCustomer(anyString(), anyString());
     }
 
     @Test
