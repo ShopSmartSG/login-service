@@ -17,6 +17,7 @@ import java.security.DrbgParameters;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
+import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 import static java.security.DrbgParameters.Capability.RESEED_ONLY;
 
 @Service
@@ -40,8 +41,11 @@ public class OtpService {
 
     public String generateOtp() {
         try{
+            // The following call requests a strong DRBG instance. If successful returns an instance,
+            // that instance is guaranteed to support 256 bits of security strength
+            // with prediction resistance available.
             SecureRandom random = SecureRandom.getInstance("DRBG",
-                    DrbgParameters.instantiation(128, RESEED_ONLY, null));
+                    DrbgParameters.instantiation(256, PR_AND_RESEED, null));
             byte[] bytes = new byte[4]; // 32 bits = 4 bytes = enough for 6 digits
             random.nextBytes(bytes);
             int number = ByteBuffer.wrap(bytes).getInt() & 0x7fffffff; // Remove sign bit
