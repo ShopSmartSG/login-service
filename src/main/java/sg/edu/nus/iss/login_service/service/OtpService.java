@@ -12,8 +12,12 @@ import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.OtpRepository;
 import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
 
+import java.nio.ByteBuffer;
+import java.security.DrbgParameters;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+
+import static java.security.DrbgParameters.Capability.RESEED_ONLY;
 
 @Service
 public class OtpService {
@@ -35,8 +39,17 @@ public class OtpService {
     }
 
     public String generateOtp() {
-        SecureRandom random = new SecureRandom();
-        return String.format("%06d", random.nextInt(999999));
+        try{
+            SecureRandom random = SecureRandom.getInstance("DRBG",
+                    DrbgParameters.instantiation(128, RESEED_ONLY, null));
+            byte[] bytes = new byte[4]; // 32 bits = 4 bytes = enough for 6 digits
+            random.nextBytes(bytes);
+            int number = ByteBuffer.wrap(bytes).getInt() & 0x7fffffff; // Remove sign bit
+            return String.format("%06d", number % 1000000); // Ensure 6 digits
+        } catch(Exception ex){
+            logger.error("Error generating OTP: ", ex);
+            throw new OtpException("Error generating OTP.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     private void sendOtpEmailBasedOnProfileType(String email, String otpCode, ProfileType profileType) {
