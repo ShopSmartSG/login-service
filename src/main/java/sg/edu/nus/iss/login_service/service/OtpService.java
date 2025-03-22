@@ -10,8 +10,15 @@ import sg.edu.nus.iss.login_service.entity.Otp;
 import sg.edu.nus.iss.login_service.entity.ProfileType;
 import sg.edu.nus.iss.login_service.exception.OtpException;
 import sg.edu.nus.iss.login_service.repository.OtpRepository;
+import sg.edu.nus.iss.login_service.util.LogMaskingUtil;
+
+import java.nio.ByteBuffer;
+import java.security.DrbgParameters;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+
+import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
+import static java.security.DrbgParameters.Capability.RESEED_ONLY;
 
 @Service
 public class OtpService {
@@ -21,31 +28,45 @@ public class OtpService {
     private final OtpRepository otpRepository;
     private final JavaMailSender mailSender;
     private EmailService emailService;
+    private LogMaskingUtil logMaskingUtil;
 
     @Autowired
-    public OtpService(OtpRepository otpRepository, JavaMailSender mailSender, EmailService emailService) {
+    public OtpService(OtpRepository otpRepository, JavaMailSender mailSender, EmailService emailService, LogMaskingUtil logMaskingUtil) {
         this.otpRepository = otpRepository;
         this.mailSender = mailSender;
         this.emailService = emailService;
+        this.logMaskingUtil = logMaskingUtil;
 
     }
 
     public String generateOtp() {
-        SecureRandom random = new SecureRandom();
-        return String.format("%06d", random.nextInt(999999));
+        try{
+            // The following call requests a strong DRBG instance. If successful returns an instance,
+            // that instance is guaranteed to support 256 bits of security strength
+            // with prediction resistance available.
+            SecureRandom random = SecureRandom.getInstance("DRBG",
+                    DrbgParameters.instantiation(256, PR_AND_RESEED, null));
+            byte[] bytes = new byte[4]; // 32 bits = 4 bytes = enough for 6 digits
+            random.nextBytes(bytes);
+            int number = ByteBuffer.wrap(bytes).getInt() & 0x7fffffff; // Remove sign bit
+            return String.format("%06d", number % 1000000); // Ensure 6 digits
+        } catch(Exception ex){
+            logger.error("Error generating OTP: ", ex);
+            throw new OtpException("Error generating OTP.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     private void sendOtpEmailBasedOnProfileType(String email, String otpCode, ProfileType profileType) {
         logger.debug("Sending OTP email for user with profileType {}", profileType);
         if (profileType == ProfileType.CUSTOMER) {
             logger.debug("Sending OTP email for customer");
-            mailSender.send(emailService.sendOtpEmailForCustomer(email, otpCode));
+            emailService.sendOtpEmailForCustomer(email, otpCode);
         } else if (profileType == ProfileType.MERCHANT) {
             logger.debug("Sending OTP email for merchant");
-            mailSender.send(emailService.sendOtpEmailForMerchant(email, otpCode));
+            emailService.sendOtpEmailForMerchant(email, otpCode);
         } else if (profileType == ProfileType.DELIVERY) {
             logger.debug("Sending OTP email for delivery partner");
-            mailSender.send(emailService.sendOtpEmailForDeliveryPartner(email, otpCode));
+            emailService.sendOtpEmailForDeliveryPartner(email, otpCode);
         }
     }
 
@@ -62,7 +83,6 @@ public class OtpService {
             }
 
             existingOtp.setCode(generateOtp());
-            logger.info("OTP expiration time: " + existingOtp.getExpirationTime() + ", Current time: " + LocalDateTime.now());
             existingOtp.setExpirationTime(LocalDateTime.now().plusMinutes(3));
             existingOtp.setFailedAttempts(0);
             existingOtp.setBlocked(false);
@@ -82,7 +102,7 @@ public class OtpService {
             logger.info("Sending OTP email for user with profileType {}", profileType);
             sendOtpEmailBasedOnProfileType(email, newOtp.getCode(), profileType);
         }
-
+        logger.info("OTP sent successfully to {}", logMaskingUtil.maskEmail(email));
         return "OTP sent successfully to " + email;
     }
 

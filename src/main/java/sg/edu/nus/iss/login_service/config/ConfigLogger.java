@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import sg.edu.nus.iss.login_service.service.AuthService;
 
 @Component
 public class ConfigLogger implements CommandLineRunner {
@@ -24,6 +23,13 @@ public class ConfigLogger implements CommandLineRunner {
     @Value("${mongo.users.password}")
     private String mongoUsersPassword;
 
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
+    @Value("${spring.mail.password}")
+    private String fromEmailPassword;
+
+
     @Override
     public void run(String... args) {
         logger.info("MongoDB SRV: {}", mongoSrv);
@@ -31,6 +37,9 @@ public class ConfigLogger implements CommandLineRunner {
         logger.info("MongoDB Users Username: {}", mongoUsersUsername);
         // If necessary, log a masked version of the password for debugging
         logger.info("MongoDB Users Password: {}", maskPassword(mongoUsersPassword));
+        logger.info("Email From: {}", fromEmail);
+        // If necessary, log a masked version of the password for debugging
+        logger.info("Email Password: {}", maskPassword(fromEmailPassword));
     }
 
     private String maskPassword(String password) {
